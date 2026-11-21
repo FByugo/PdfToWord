@@ -1,0 +1,6 @@
+[project]
+name = "pdftoword"
+version = "0.1.0"
+description = "Turn a text PDF into an editable Word file with headings and tables kept, scans named, and a letter count check per page."
+requires-python = ">=3.10"
+dependencies = ["pymupdf>=1.24"]
