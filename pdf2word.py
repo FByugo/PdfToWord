@@ -82,12 +82,39 @@ def outer_tables(tables):
     return keep
 
 
+def cell_rows(t, words):
+    """Table text built from whole words inside each cell box, in reading order.
+    find_tables().extract() joins characters, and a PDF that stores no space characters (a lab guide tried
+    2026-11-21) came out as Exploretheeffectofforce. A cell PyMuPDF cannot box falls back to extract()."""
+    raw = t.extract()
+    out = []
+    used = set()   # a word inside two overlapping cell boxes (a spanned row) is written once, in the first
+    for ri, row in enumerate(t.rows):
+        cells = []
+        for ci, box in enumerate(row.cells):
+            if box is None:
+                cells.append(re.sub(r"\s+", " ", (raw[ri][ci] if ri < len(raw) and ci < len(raw[ri]) else "") or "").strip())
+                continue
+            inbox = sorted((w for w in words if w[5:8] not in used and inside(w[:4], [box])), key=lambda w: (w[5], w[6], w[7]))
+            used.update(w[5:8] for w in inbox)
+            cells.append(" ".join(w[4] for w in inbox))
+        out.append(cells)
+    return out
+
+
 def count(s):
     return len(re.findall(r"\w", s))
 
 
 def convert(src, dst):
     doc = pymupdf.open(src)
+    # A rotated page (landscape tables in papers) gave find_tables boxes in one coordinate space and get_text
+    # blocks in another, so a caption beside a table was masked as if inside it (a 44 page paper lost 823 letters).
+    # Reading each page unrotated puts both in the same space. Only the open copy in memory is changed.
+    rotated = [n for n, p in enumerate(doc, 1) if p.rotation]
+    for p in doc:
+        if p.rotation:
+            p.set_rotation(0)
     sizes = []
     for page in doc:
         for b in page.get_text("dict")["blocks"]:
@@ -95,7 +122,7 @@ def convert(src, dst):
                 for s in l["spans"]:
                     sizes += [round(s["size"], 1)] * max(1, len(s["text"].strip()))
     body_size = statistics.median(sizes) if sizes else 11
-    parts, report = [], {"source": src, "pages": [], "body_font_size": body_size}
+    parts, report = [], {"source": src, "pages": [], "body_font_size": body_size, "rotated_pages": rotated}
     for n, page in enumerate(doc, 1):
         if n > 1:   # each PDF page starts a new Word page, so page breaks fall where they did
             parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
@@ -141,7 +168,7 @@ def convert(src, dst):
         out_chars = 0
         for _, kind, obj in sorted(items, key=lambda x: x[0]):
             if kind == "table":
-                rows = [[re.sub(r"\s+", " ", c or "").strip() for c in r] for r in obj.extract()]
+                rows = cell_rows(obj, words)
                 # find_tables can return split columns that are empty in every row (seen on the first fixture,
                 # 3 real columns came back as 5), so a column or row with no text in any cell is dropped.
                 keep = [i for i in range(max(len(r) for r in rows)) if any(i < len(r) and r[i] for r in rows)]
