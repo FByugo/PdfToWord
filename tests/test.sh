@@ -12,6 +12,7 @@ ok "one table of 3 rows and 3 columns" '[ "$(grep -o "<w:tbl>" "$T/d.xml" | wc -
 ok "table cell South 388 14 kept in order" 'grep -q "South</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t xml:space=\"preserve\">388</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t xml:space=\"preserve\">14<" "$T/d.xml"'
 ok "table words not repeated as loose text" '[ "$(grep -o "North" "$T/d.xml" | wc -l)" = 1 ]'
 ok "paragraph after the table comes after it" 'python3 -c "import sys;d=open(sys.argv[1]).read();sys.exit(0 if d.index(\"<w:tbl>\")<d.index(\"last working day\") else 1)" "$T/d.xml"'
+ok "one page break between the two pages" '[ "$(grep -o "w:type=\"page\"" "$T/d.xml" | wc -l)" = 1 ]'
 ok "scan page named, not guessed" 'grep -q "Page 2 has no text layer, it is a scanned image" "$T/d.xml"'
 ok "report: page 1 wrote every letter once, none lost or doubled" 'python3 -c "import json,sys;r=json.load(open(sys.argv[1]));p=r[\"pages\"][0];sys.exit(0 if p[\"chars_out\"]==p[\"chars_in\"]>0 and r[\"scanned_pages\"]==[2] else 1)" "$T/r.json"'
 ok "a table inside another table is dropped" 'python3 -c "

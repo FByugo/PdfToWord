@@ -1,6 +1,6 @@
 # PdfToWord
 
-Turns a PDF that has a text layer into an editable Word file. Headings are found by font size, paragraphs and tables stay in page order, and tables come out as real Word tables.
+Turns a PDF that has a text layer into an editable Word file. Headings are found by font size, paragraphs and tables stay in page order, each PDF page starts a new Word page, and tables come out as real Word tables.
 
 A scanned page has no text to read, so it is not guessed. It is named in the document and in the report.
 

@@ -97,6 +97,8 @@ def convert(src, dst):
     body_size = statistics.median(sizes) if sizes else 11
     parts, report = [], {"source": src, "pages": [], "body_font_size": body_size}
     for n, page in enumerate(doc, 1):
+        if n > 1:   # each PDF page starts a new Word page, so page breaks fall where they did
+            parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
         info = {"page": n, "headings": 0, "paragraphs": 0, "tables": [], "scan": False}
         raw = page.get_text()
         if count(raw) == 0:
